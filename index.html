@@ -112,16 +112,13 @@
       <div id="ask-status" class="status-line"></div>
 
       <!-- Live result area (current question) -->
-      <div id="cov-banner" class="banner" style="display:none">
-        <span class="ban-icon" id="ban-icon"></span>
-        <div class="ban-body">
-          <div class="ban-title" id="ban-title"></div>
-          <div class="ban-exp" id="ban-exp"></div>
-        </div>
-      </div>
       <div id="sim-panel"></div>
       <div id="ent-panel" class="ent-section"></div>
-      <div id="ans-panel"></div>
+
+      <div id="ans-section" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">Explanation</div>
+        <div id="ans-panel"></div>
+      </div>
 
       <!-- Propose form -->
       <div id="propose-wrap" style="display:none">
@@ -131,8 +128,8 @@
           <div class="propose-header">
             <div class="propose-header-icon">💡</div>
             <div>
-              <div class="propose-header-title">Have a better idea?</div>
-              <div class="propose-header-sub">The aim of this step is to <strong>validate and optimise</strong> the MOAF-DiT ontology. Suggest a class or property, whether it's missing, could be renamed, merged, or better defined.</div>
+              <div class="propose-header-title">AI-generated suggestions</div>
+              <div class="propose-header-sub">Based on what was found in the ontology, you can propose a new class or property — whether it is missing, could be renamed, merged, or better defined.</div>
             </div>
           </div>
 

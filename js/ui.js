@@ -11,29 +11,16 @@ const UI = (() => {
   function spinner(msg) { return '<span class="spinner"></span> ' + msg; }
 
   function clearAskArea() {
-    $('cov-banner').style.display = 'none';
     $('ent-panel').innerHTML = '';
     $('sim-panel').innerHTML = '';
     $('ans-panel').innerHTML = '';
+    $('ans-section').style.display = 'none';
     $('propose-wrap').style.display = 'none';
     setStatus('ask-status', '');
   }
 
-  /* --- Coverage banner --- */
-  function renderCoverage(coverage, explanation) {
-    const map = {
-      fully_covered:    { cls:'full',    icon:'✅', label:'Fully covered' },
-      partially_covered:{ cls:'partial', icon:'⚠️', label:'Partially covered' },
-      not_covered:      { cls:'missing', icon:'❌', label:'Not covered' },
-    };
-    const cfg = map[coverage] || { cls:'partial', icon:'⚠️', label:'Assessed' };
-    const el = $('cov-banner');
-    el.className = 'banner ' + cfg.cls;
-    el.style.display = 'flex';
-    $('ban-icon').textContent  = cfg.icon;
-    $('ban-title').textContent = cfg.label;
-    $('ban-exp').textContent   = explanation || '';
-  }
+  /* --- Coverage banner (kept for data logging, no longer shown in UI) --- */
+  function renderCoverage(coverage, explanation) {}
 
   function kindBadge(kind) {
     return '<span class="kind-badge kind-' + kind + '">' + kind + '</span>';
@@ -83,7 +70,7 @@ const UI = (() => {
   function renderEntityPanel(hits) {
     if (!hits.length) { $('ent-panel').innerHTML = ''; return; }
     $('ent-panel').innerHTML =
-      '<div class="section-label">' + hits.length + ' matching entit' + (hits.length>1?'ies':'y') + '</div>' +
+      '<div class="section-label">' + hits.length + ' potential similarit' + (hits.length>1?'ies':'y') + '</div>' +
       hits.map(function(e,i){ return renderEntityCard(e,i); }).join('');
   }
 
@@ -104,9 +91,10 @@ const UI = (() => {
   }
 
   function renderAnswer(text) {
-    if (!text) { $('ans-panel').innerHTML = ''; return; }
+    if (!text) { $('ans-panel').innerHTML = ''; $('ans-section').style.display = 'none'; return; }
     var html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
     $('ans-panel').innerHTML = '<div class="ans-block">' + html + '</div>';
+    $('ans-section').style.display = 'block';
   }
 
   function showProposeForm(missingConcepts, suggestedParent, question, coverage) {
