@@ -154,7 +154,7 @@ const App = (() => {
       const entry = _makeEntry(question, 'fully_covered', [], direct, 'direct');
       UI.renderCoverage('fully_covered', 'Direct schema answer');
       UI.renderAnswer(direct);
-      UI.showProposeForm([], '', question);
+      UI.showProposeForm([], '', question, 'fully_covered');
       _addToLog(entry);
       UI.$('ask-btn').disabled = false;
       Storage.log(question, 'fully_covered', [], direct, 'direct', state.ontologyName);
@@ -219,7 +219,7 @@ const App = (() => {
         UI.renderAnswer(answer);
 
         // Always show propose form — users can suggest improvements even for covered concepts
-        UI.showProposeForm(json?.missing_concepts || [], json?.suggested_parent || '', question);
+        UI.showProposeForm(json?.missing_concepts || [], json?.suggested_parent || '', question, cov);
 
         // ── Add to session log ──
         const entry = _makeEntry(question, cov, json?.missing_concepts || [], answer, 'gemini');
@@ -240,7 +240,7 @@ const App = (() => {
         const entry = _makeEntry(question, cov, [], '', 'string-only');
         _addToLog(entry);
         Storage.log(question, cov, [], '', 'string-only', state.ontologyName);
-        UI.showProposeForm([], '', question);
+        UI.showProposeForm([], '', question, cov);
       }
     } else {
       const cov = maxScore >= CFG.THRESH_FULL    ? 'fully_covered'    :
@@ -249,7 +249,7 @@ const App = (() => {
       const entry = _makeEntry(question, cov, [], '', 'string-only');
       _addToLog(entry);
       Storage.log(question, cov, [], '', 'string-only', state.ontologyName);
-      UI.showProposeForm([], '', question);
+      UI.showProposeForm([], '', question, cov);
     }
 
     UI.setStatus('ask-status', '');
@@ -279,13 +279,16 @@ const App = (() => {
     const name = UI.$('p-name').value.trim();
     if (!name) { alert('Please enter a concept name.'); return; }
     const proposal = {
-      name:    name,
-      type:    UI.$('p-type').value,
-      parent:  UI.$('p-parent').value.trim(),
-      desc:    UI.$('p-desc').value.trim(),
-      example: UI.$('p-ex').value.trim(),
-      notes:   UI.$('p-notes') ? UI.$('p-notes').value.trim() : '',
-      ctx:     UI.$('p-ctx').value,
+      name:             name,
+      type:             UI.$('p-type').value,
+      parent:           UI.$('p-parent').value.trim(),
+      desc:             UI.$('p-desc').value.trim(),
+      example:          UI.$('p-ex').value.trim(),
+      notes:            UI.$('p-notes') ? UI.$('p-notes').value.trim() : '',
+      ctx:              UI.$('p-ctx').value,
+      coverage_context: UI.$('p-coverage').value,
+      missing_context:  (() => { try { return JSON.parse(UI.$('p-missing').value || '[]'); } catch { return []; } })(),
+      ontology_name:    state.ontologyName,
     };
     await Storage.saveProposal(proposal);
     // Clear form fields
@@ -329,6 +332,37 @@ const App = (() => {
     });
   }
 
+  /* ── Auto-load a bundled ontology (used when ?ontology=moafdito) ── */
+  async function autoLoadOntology(url, displayName) {
+    UI.setStatus('parse-status', UI.spinner('Loading ' + displayName + ' ontology…'));
+    try {
+      await Ontology.loadN3();
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('File not found (' + resp.status + '). Make sure ' + url + ' is in the repo.');
+      const text = await resp.text();
+
+      state.ontologyName    = displayName;
+      state.quads           = await Ontology.parseTTL(text);
+      state.onto            = Ontology.buildIndex(state.quads);
+      state.entityCards     = state.onto.entities.map(Ontology.makeEntityCard);
+      state.systemInstruction = GraphRAG.buildSystemInstruction(state.onto);
+
+      UI.$('dropzone').innerHTML =
+        '<div class="dz-icon">✅</div>' +
+        '<p><strong>' + displayName + '</strong> ontology pre-loaded</p>' +
+        '<p class="dz-hint">' + state.onto.total + ' entities · ' + state.quads.length + ' triples</p>';
+
+      UI.renderOntoStats(state.onto);
+      UI.$('index-box').style.display = 'block';
+      UI.showOntoBadge(displayName, state.onto.total);
+      UI.setStatus('parse-status',
+        '<span style="color:var(--green)">✓ ' + displayName + ' loaded — ' + state.quads.length + ' triples</span>');
+    } catch (e) {
+      UI.setStatus('parse-status',
+        '<span style="color:var(--red)">⚠ Could not auto-load ontology: ' + e.message + '</span>');
+    }
+  }
+
   /* ── Init ── */
   function init() {
     const saved = localStorage.getItem(CFG.KEY_APIKEY) || '';
@@ -341,6 +375,13 @@ const App = (() => {
     UI.$('q-main').addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') ask(); });
     UI.$('admin-pw').addEventListener('keydown', e => { if (e.key === 'Enter') Admin.login(); });
     UI.renderSessionLog([]);
+
+    // Pre-load a bundled ontology if ?ontology= is in the URL
+    const params = new URLSearchParams(location.search);
+    const onto   = params.get('ontology');
+    if (onto === 'moafdito') {
+      autoLoadOntology('ontologies/moafdito.ttl', 'MOAF-DiT');
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

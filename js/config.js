@@ -7,12 +7,22 @@ const CFG = {
   /* ── Gemini models ───────────────────────
      gemini-2.0-flash is deprecated for new users.
      Use gemini-2.0-flash-lite instead.       */
-  GEMINI_GEN : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
+  GEMINI_GEN_MODELS : [
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash-lite-001',
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+  ],
+  GEMINI_API_BASE : 'https://generativelanguage.googleapis.com/v1beta',
+  GEMINI_GEN : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite-001:generateContent',
   // Alternatives:
   // 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
   // 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent'
 
-  GEMINI_EMB : 'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004',
+  GEMINI_EMB_MODEL : 'gemini-embedding-001',
+  GEMINI_EMB : 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001',
 
   /* ── Admin password — change this ──────── */
   ADMIN_PASS : 'moaf2025',
@@ -23,7 +33,7 @@ const CFG = {
   SUPABASE_ANON_KEY : '',
 
   /* ── Google Sheets (optional backup) ──── */
-  SHEET_URL : '',
+  SHEET_URL : 'https://script.google.com/macros/s/AKfycbx3rfDAtF2ywY6pGEfDbXG35fgcr76Vf8E_3VanlD8FpZT4zMACwHtbylB4juHlzTAF/exec',
 
   /* ── Coverage thresholds ──────────────── */
   THRESH_FULL    : 0.85,

@@ -52,7 +52,7 @@
             <input type="password" id="api-key" placeholder="AIzaSy…"/>
             <button class="btn btn-primary" onclick="App.saveKey()">Save</button>
           </div>
-          <p class="hint">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>. Uses <code>gemini-2.0-flash-lite</code> + <code>text-embedding-004</code>.</p>
+          <p class="hint">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>. Uses <code>gemini-2.0-flash-lite</code> + <code>gemini-embedding-001</code>.</p>
         </div>
         <div id="key-status" class="status-line"></div>
       </div>
@@ -136,6 +136,10 @@
             </div>
           </div>
 
+          <!-- Hidden context captured from the triggering question -->
+          <input type="hidden" id="p-coverage"/>
+          <input type="hidden" id="p-missing"/>
+
           <!-- AI suggestion chips -->
           <div id="miss-chips-row" class="miss-chips" style="margin-bottom:6px"></div>
 
@@ -175,12 +179,7 @@
               placeholder="e.g. A SolderPasteInspection is performed before reflow…"/>
           </div>
 
-          <!-- Additional notes -->
-          <div class="pf">
-            <label class="pf-label">Additional notes</label>
-            <textarea id="p-notes" class="pf-input pf-textarea" rows="2"
-              placeholder="Anything else the maintainers should know"></textarea>
-          </div>
+
 
           <!-- Hidden context field -->
           <input type="hidden" id="p-ctx"/>

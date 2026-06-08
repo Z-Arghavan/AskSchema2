@@ -109,10 +109,12 @@ const UI = (() => {
     $('ans-panel').innerHTML = '<div class="ans-block">' + html + '</div>';
   }
 
-  function showProposeForm(missingConcepts, suggestedParent, question) {
+  function showProposeForm(missingConcepts, suggestedParent, question, coverage) {
     $('propose-wrap').style.display = 'block';
-    $('p-ctx').value    = question;
-    $('p-parent').value = suggestedParent || '';
+    $('p-ctx').value      = question;
+    $('p-coverage').value = coverage || '';
+    $('p-missing').value  = JSON.stringify(missingConcepts || []);
+    $('p-parent').value   = suggestedParent || '';
     $('miss-chips-row').innerHTML = (missingConcepts || []).map(function(m){
       return '<span class="miss-chip" onclick="UI.selectMissChip(this,\''+esc(m)+'\')">'+esc(m)+'</span>';
     }).join('');

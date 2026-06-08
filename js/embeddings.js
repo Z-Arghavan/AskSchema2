@@ -23,16 +23,19 @@ const Embeddings = (() => {
      Returns array of float32 vectors in same order as input texts. */
   async function batchEmbed(texts, apiKey) {
     const requests = texts.map(t => ({
-      model: 'models/text-embedding-004',
+      model: `models/${CFG.GEMINI_EMB_MODEL}`,
       content: { parts: [{ text: t.substring(0, 8000) }] },  // API char limit
       taskType: 'RETRIEVAL_DOCUMENT',
     }));
 
     const r = await fetch(
-      `${CFG.GEMINI_EMB}:batchEmbedContents?key=${apiKey}`,
+      `${CFG.GEMINI_EMB}:batchEmbedContents`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({ requests }),
       }
     );
@@ -53,12 +56,15 @@ const Embeddings = (() => {
      RETRIEVAL_DOCUMENT used for corpus). */
   async function embedQuery(text, apiKey) {
     const r = await fetch(
-      `${CFG.GEMINI_EMB}:embedContent?key=${apiKey}`,
+      `${CFG.GEMINI_EMB}:embedContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({
-          model: 'models/text-embedding-004',
+          model: `models/${CFG.GEMINI_EMB_MODEL}`,
           content: { parts: [{ text: text.substring(0, 8000) }] },
           taskType: 'RETRIEVAL_QUERY',
         }),

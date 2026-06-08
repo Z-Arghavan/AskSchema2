@@ -5,6 +5,7 @@
    ══════════════════════════════════════════ */
 
 const GraphRAG = (() => {
+  let cachedGenerationModels = null;
 
   /* ── Subgraph expansion ── */
   function expandSubgraph(seedIRIs, quads, entities) {
@@ -107,6 +108,28 @@ ${kgEvidence}
 QUESTION: ${question}`;
   }
 
+  async function listGenerationModels(apiKey) {
+    if (cachedGenerationModels) return cachedGenerationModels;
+
+    const apiBase = CFG.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta';
+    const r = await fetch(`${apiBase}/models`, {
+      headers: { 'x-goog-api-key': apiKey },
+    });
+
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(`Gemini model list ${r.status}: ${(d?.error?.message || '').substring(0, 140)}`);
+    }
+
+    const d = await r.json();
+    cachedGenerationModels = (d.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => (m.name || '').replace(/^models\//, ''))
+      .filter(Boolean);
+
+    return cachedGenerationModels;
+  }
+
   /* ── Call Gemini with full conversation history ───────────────────────
      history = [{role:'user'|'model', text:'...'}]
      systemInstruction = string (ontology context, sent once)           */
@@ -137,33 +160,47 @@ async function callGemini(userPrompt, apiKey, history = [], systemInstruction = 
       generationConfig: { temperature: 0.15, maxOutputTokens: 1400 },
     };
 
-    // Retry on 429
-    for (let attempt = 0; attempt <= 2; attempt++) {
-      const r = await fetch(`${CFG.GEMINI_GEN}?key=${apiKey}`, {
-        method : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify(body),
-      });
+    const configuredModels = CFG.GEMINI_GEN_MODELS || [];
+    const availableModels = await listGenerationModels(apiKey);
+    const modelSet = new Set([...configuredModels, ...availableModels]);
+    const apiBase = CFG.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta';
+    const endpoints = [...modelSet].map(model => `${apiBase}/models/${model}:generateContent`);
 
-      if (r.status === 429) {
-        if (attempt < 2) {
-          const wait = (attempt + 1) * 20;
-          UI.setStatus('ask-status', `<span class="spinner"></span> Rate limited — retrying in ${wait}s…`);
-          await sleep(wait * 1000);
-          continue;
+    for (const endpoint of endpoints) {
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        const r = await fetch(endpoint, {
+          method : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body   : JSON.stringify(body),
+        });
+
+        if (r.status === 404) break;
+
+        if (r.status === 429) {
+          if (attempt < 2) {
+            const wait = (attempt + 1) * 20;
+            UI.setStatus('ask-status', `<span class="spinner"></span> Rate limited - retrying in ${wait}s...`);
+            await sleep(wait * 1000);
+            continue;
+          }
+          throw new Error('Rate limit (429). Please wait a minute and try again.');
         }
-        throw new Error('Rate limit (429). Please wait a minute and try again.');
-      }
 
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}));
-        throw new Error(`Gemini ${r.status}: ${(d?.error?.message || '').substring(0, 120)}`);
-      }
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          throw new Error(`Gemini ${r.status}: ${(d?.error?.message || '').substring(0, 120)}`);
+        }
 
-      const d   = await r.json();
-      const txt = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      return txt;
+        const d   = await r.json();
+        const txt = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return txt;
+      }
     }
+
+    throw new Error('Gemini 404: none of the configured or discovered generation models are available for this API key.');
   }
 
   /* ── Parse structured JSON from model response ── */

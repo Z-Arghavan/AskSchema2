@@ -3,12 +3,15 @@
    Session-based Q&A storage.
 
    Priority order:
-     1. Supabase (cross-user, real database)
-     2. Google Sheets (cross-user, spreadsheet)
-     3. localStorage (current browser only — fallback)
+     1. Local server  (data/qa_log.json — persistent on disk)
+     2. Supabase      (cross-user, real database)
+     3. Google Sheets (cross-user, spreadsheet)
+     4. localStorage  (current browser only — fallback)
 
    Every question is stored in ALL available
    backends simultaneously.
+
+   Run `node server.js` to enable disk persistence.
    ══════════════════════════════════════════ */
 
 const Storage = (() => {
@@ -29,6 +32,37 @@ const Storage = (() => {
       source          : source || 'gemini',
       ontology_name   : ontologyName || '',
     };
+  }
+
+  /* ── Local server API ─────────────────────────────────────────────────
+     Used when `node server.js` is running. Saves to data/qa_log.json.
+     Silently skipped when not available (e.g. opening index.html as file). */
+  const SERVER_BASE = (location.protocol !== 'file:') ? '' : null;
+
+  async function saveServer(entry) {
+    if (SERVER_BASE === null) return;
+    try {
+      await fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      });
+    } catch { /* server not running — silent */ }
+  }
+
+  async function fetchServer() {
+    if (SERVER_BASE === null) return null;
+    try {
+      const r = await fetch('/api/log');
+      if (!r.ok) return null;
+      const data = await r.json();
+      return Array.isArray(data) ? data : null;
+    } catch { return null; }
+  }
+
+  async function clearServer() {
+    if (SERVER_BASE === null) return;
+    try { await fetch('/api/log', { method: 'DELETE' }); } catch {}
   }
 
   /* ── localStorage ──────────────────────────────────────────────────────
@@ -148,10 +182,13 @@ const Storage = (() => {
   async function saveSheet(entry) {
     if (!CFG.SHEET_URL) return;
     try {
+      // no-cors + text/plain avoids the CORS preflight that Apps Script blocks.
+      // We can't read the response, but the row is still written to the sheet.
       await fetch(CFG.SHEET_URL, {
-        method: 'POST',
-        body: JSON.stringify(entry),
-        headers: { 'Content-Type': 'application/json' },
+        method  : 'POST',
+        mode    : 'no-cors',
+        body    : JSON.stringify(entry),
+        headers : { 'Content-Type': 'text/plain' },
       });
     } catch (e) {
       console.warn('Google Sheets write failed (non-critical):', e.message);
@@ -163,6 +200,7 @@ const Storage = (() => {
     const entry = makeEntry(question, coverage, missingConcepts, answer, source, ontologyName);
     saveLocal(entry);
     // fire-and-forget — don't await, never block the UI
+    saveServer(entry).catch(() => {});
     saveSupabase(entry).catch(() => {});
     saveSheet(entry).catch(() => {});
     return entry;
@@ -179,17 +217,61 @@ const Storage = (() => {
     }
   }
 
+  async function saveSheetProposal(proposal) {
+    if (!CFG.SHEET_URL) return;
+    try {
+      await fetch(CFG.SHEET_URL, {
+        method  : 'POST',
+        mode    : 'no-cors',
+        body    : JSON.stringify({
+          _type            : 'proposal',
+          timestamp        : new Date().toISOString(),
+          session_id       : SESSION_ID,
+          name             : proposal.name     || '',
+          type             : proposal.type     || '',
+          parent           : proposal.parent   || '',
+          description      : proposal.desc     || '',
+          example          : proposal.example  || '',
+          notes            : proposal.notes    || '',
+          context_question : proposal.ctx      || '',
+          coverage_context : proposal.coverage_context || '',
+          missing_context  : (proposal.missing_context || []).join('; '),
+          ontology_name    : proposal.ontology_name || '',
+        }),
+        headers : { 'Content-Type': 'text/plain' },
+      });
+    } catch (e) {
+      console.warn('Google Sheets proposal write failed (non-critical):', e.message);
+    }
+  }
+
   async function saveProposal(proposal) {
     saveProposalLocal(proposal);
     saveSupabaseProposal(proposal).catch(() => {});
+    saveSheetProposal(proposal).catch(() => {});
   }
 
   /* ── Public: read log for admin ────────────────────────────────────────
-     Tries Supabase first (full cross-user data), falls back to localStorage. */
+     When server is available: merge server + localStorage so no history
+     is lost, and auto-migrate any localStorage-only entries to the server.
+     Falls back to Supabase → localStorage when server is unreachable. */
   async function readLog() {
+    const server = await fetchServer();
+
+    if (server !== null) {
+      const local      = getLocal();
+      const serverKeys = new Set(server.map(e => e.timestamp + '|' + e.question));
+      const localOnly  = local.filter(e => !serverKeys.has(e.timestamp + '|' + e.question));
+      // Silently migrate localStorage-only entries to the server file
+      for (const e of localOnly) saveServer(e).catch(() => {});
+      // Return all entries sorted oldest → newest
+      return [...server, ...localOnly].sort((a, b) =>
+        (a.timestamp || '') < (b.timestamp || '') ? -1 : 1
+      );
+    }
+
     const remote = await fetchSupabase();
     if (remote && remote.length) {
-      // Normalise Supabase column names to match local format
       return remote.map(r => ({
         session_id      : r.session_id,
         timestamp       : r.created_at,
@@ -215,6 +297,7 @@ const Storage = (() => {
   function clearLocal() {
     localStorage.removeItem(CFG.KEY_LOG);
     localStorage.removeItem(CFG.KEY_PROPOSALS);
+    clearServer().catch(() => {});
   }
 
   /* ── Export helpers ── */
