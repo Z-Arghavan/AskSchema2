@@ -188,7 +188,6 @@ const UI = (() => {
           '<span class="log-ts">' + ts + '</span>' +
         '</div>' +
         '<div class="log-a">' +
-          '<div class="log-cov-badge badge-' + c.cls + '">' + c.icon + ' ' + c.label + '</div>' +
           (ans ? '<div class="log-ans-text">' + ans + '</div>' : '') +
           missHtml + noteHtml +
           '<div class="log-actions">' + noteBtn +
