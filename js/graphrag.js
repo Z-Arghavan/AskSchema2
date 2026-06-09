@@ -79,9 +79,9 @@ ${allNames}
 
 Rules:
 - Answer ONLY based on the ontology context provided per turn.
-- If a concept does not exist, say so clearly and suggest a suitable OWL class or property name.
+- Give a full explanation: describe what exists in the ontology, how it relates to the question, and what is missing or could be improved.
+- If a concept does not exist, say so clearly, explain what related concepts do exist, and suggest a suitable OWL class or property name.
 - If asked for suggestions (e.g. "what do you suggest?"), propose missing concepts with CamelCase names, a parent class, and a brief description.
-- Be concise and precise.
 - When you respond, always end with a JSON block on its own line:
   {"coverage":"fully_covered|partially_covered|not_covered","missing_concepts":[],"suggested_parent":""}`;
   }
