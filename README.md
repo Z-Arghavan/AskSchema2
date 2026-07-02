@@ -2,9 +2,10 @@
 
 This tool lets you ask natural language questions about the MOAF-DiT ontology. It retrieves relevant concepts from the schema and generates an explanation using AI. If you find something missing, you can propose a new concept directly from the interface.
 
-* Use the AskSchema for any ontology: https://z-arghavan.github.io/AskSchema2/
-* Use the AskSchema for MOAFDITO ontology (ontology is pre-loaded): https://z-arghavan.github.io/AskSchema2/?ontology=moafdito
-* MOAFDIT ontology: https://z-arghavan.github.io/MOAF-DiT/
+* [Use AskSchema for any ontology](https://z-arghavan.github.io/AskSchema2/)
+* [Use AskSchema for the MOAFDITO ontology, with the ontology pre-loaded](https://z-arghavan.github.io/AskSchema2/?ontology=moafdito)
+* [Access the MOAFDIT ontology](https://z-arghavan.github.io/MOAF-DiT/)
+
 
 ---
 
