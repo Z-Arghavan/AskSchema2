@@ -2,13 +2,16 @@
 
 This tool lets you ask natural language questions about the MOAF-DiT ontology. It retrieves relevant concepts from the schema and generates an explanation using AI. If you find something missing, you can propose a new concept directly from the interface.
 
-Your Gemini API key stays in your browser and is never shared.
+Use the AskSchema for any ontology: https://z-arghavan.github.io/AskSchema2/
+Use the AskSchema for MOAFDITO ontology (ontology is pre-loaded): https://z-arghavan.github.io/AskSchema2/?ontology=moafdito
+MOAFDIT ontology: https://z-arghavan.github.io/MOAF-DiT/
 
 ---
 
 ## Step 1 - Get a Gemini API key
 
 Go to https://aistudio.google.com/app/apikey and create a free API key. You will need this to get AI-generated explanations.
+Your Gemini API key stays in your browser and is never shared.
 
 ---
 
