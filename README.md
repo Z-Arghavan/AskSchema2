@@ -1,4 +1,4 @@
-# How to Use the AskOntology proof-of-concept with the MOAFDITO Ontology
+# How to Use the AskSchema proof-of-concept with the MOAFDITO Ontology
 
 This tool lets you ask natural language questions about the MOAF-DiT ontology. It retrieves relevant concepts from the schema and generates an explanation using AI. If you find something missing, you can propose a new concept directly from the interface.
 
